@@ -164,7 +164,7 @@ class CohpPlotterClass:
 
 
 # Usage Example
-file_path = 'C:/Users/Benjamin Kafin/Documents/VASP/NHC_Cu/freeCu1/freeCu2/kpoints551/COHPCAR.lobster'
+file_path = 'filepath/COHPCAR.lobster'
 energy_range = [-24, 6]
 subplot_adjustments = {'bottom': 0.1, 'top': 0.9, 'left': 0.1, 'right': 0.9}
 #threshold = (0.0000, -0.0000)  # Set the threshold for ICOHP values
