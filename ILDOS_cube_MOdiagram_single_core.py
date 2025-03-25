@@ -183,8 +183,8 @@ class LobsterAnalysis:
             #print(f"AO Contribution Differences: {ao_differences}")
     
 # Set up directories and paths
-simple_calc_dir = "C:/Users/benka/Documents/LOBSTER_run4/"
-complex_calc_dir = "C:/Users/benka/Documents/LOBSTER_run2_AuNHC/"
+simple_calc_dir = "filepath/"
+complex_calc_dir = "filepath/"
 mo_diagram_simple_path = os.path.join(simple_calc_dir, "C13N2H18_1.MO_Diagram.lobster")
 mo_diagram_complex_path = os.path.join(complex_calc_dir, "AuC13N2H18_1.MO_Diagram.lobster")
 
@@ -195,7 +195,7 @@ analysis = LobsterAnalysis(simple_calc_dir, complex_calc_dir, mo_diagram_simple_
 analysis.run_analysis()
 '''
 # Example usage
-file_path = 'C:/Users/benka/Documents/LOBSTER_run4/C13N2H18_1.MO_Diagram.lobster'
+file_path = 'filepath'
 mo_data = LobsterAnalysis.load_mo_diagram(file_path)
 
 # Debug: Verify parsed data
