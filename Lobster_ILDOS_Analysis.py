@@ -155,15 +155,8 @@ class Lobster_ILDOS_Analysis:
                     # Add pair to the temporary list and the global list
                     all_simple_pairs.append(pair)
                     all_pairs.append(pair)
-            
-                    # Write the pair immediately to allpairs.txt
-                    all_pairs_file.write(
-                        f"Complex File: {pair['complex_file']}, Simple File: {pair['simple_file']}, "
-                        f"Volumetric Correlation: {pair['volumetric_correlation']:.4f}, "
-                        f"AO Std Dev: {pair['ao_std_dev']:.4f}, Energy Shift: {pair['energy_shift']:.4f}\n"
-                    )
-                    all_pairs_file.flush()  # Force the buffer to flush
-                    # Print the pair to the console immediately
+
+                     # Print the pair to the console immediately
                    # '''
                     print(
                         f"Complex File: {pair['complex_file']}, Simple File: {pair['simple_file']}, "
@@ -171,6 +164,14 @@ class Lobster_ILDOS_Analysis:
                         f"AO Std Dev: {pair['ao_std_dev']:.4f}, Energy Shift: {pair['energy_shift']:.4f}\n"
                     )
                    # '''
+                    # Write the pair immediately to allpairs.txt
+                    all_pairs_file.write(
+                        f"Complex File: {pair['complex_file']}, Simple File: {pair['simple_file']}, "
+                        f"Volumetric Correlation: {pair['volumetric_correlation']:.4f}, "
+                        f"AO Std Dev: {pair['ao_std_dev']:.4f}, Energy Shift: {pair['energy_shift']:.4f}\n"
+                    )
+                    all_pairs_file.flush()  # Force the buffer to flush
+                    
                 # Determine best matches using the temporary list
                 best_volumetric_match = max(
                     all_simple_pairs,
