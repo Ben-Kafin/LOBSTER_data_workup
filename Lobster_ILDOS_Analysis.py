@@ -164,13 +164,13 @@ class Lobster_ILDOS_Analysis:
                     )
                     all_pairs_file.flush()  # Force the buffer to flush
                     # Print the pair to the console immediately
-                    '''
+                   # '''
                     print(
                         f"Complex File: {pair['complex_file']}, Simple File: {pair['simple_file']}, "
                         f"Volumetric Correlation: {pair['volumetric_correlation']:.4f}, "
                         f"AO Std Dev: {pair['ao_std_dev']:.4f}, Energy Shift: {pair['energy_shift']:.4f}\n"
                     )
-                   '''
+                   # '''
                 # Determine best matches using the temporary list
                 best_volumetric_match = max(
                     all_simple_pairs,
@@ -191,7 +191,11 @@ class Lobster_ILDOS_Analysis:
                         **best_volumetric_match,
                         'ao_std_dev': best_ao_match['ao_std_dev']
                     }
-                    print(f"Combined Match for {c_file}: {combined_match}")
+                    print(
+                        f"Combined Match: Complex MO: {combined_match['complex_mo_info']['name']} -> Simple MO: {combined_match['simple_mo_info']['name']}, "
+                        f"Volumetric Correlation: {combined_match['volumetric_correlation']:.4f}, AO Std Dev: {combined_match['ao_std_dev']:.4f}, "
+                        f"Energy Shift: {combined_match['energy_shift']:.4f}\n"
+                    )
                     matches.append(combined_match)
                 
                     # Write the combined match immediately to matches.txt
@@ -204,7 +208,11 @@ class Lobster_ILDOS_Analysis:
                 else:
                     # If no combined match exists, write individual matches
                     if best_volumetric_match:
-                        print(f"Best Volumetric Match for {c_file}: {best_volumetric_match}")
+                        print(
+                            f"Volumetric Match: Complex MO: {best_volumetric_match['complex_mo_info']['name']} -> Simple MO: {best_volumetric_match['simple_mo_info']['name']}, "
+                            f"Volumetric Correlation: {best_volumetric_match['volumetric_correlation']:.4f}, AO Std Dev: {best_volumetric_match['ao_std_dev']:.4f}, "
+                            f"Energy Shift: {best_volumetric_match['energy_shift']:.4f}\n"
+                        )
                         matches.append({
                             'match_type': 'volumetric',
                             **best_volumetric_match
@@ -217,7 +225,11 @@ class Lobster_ILDOS_Analysis:
                         matches_file.flush()  # Flush the file buffer
                 
                     if best_ao_match:
-                        print(f"Best AO Match for {c_file}: {best_ao_match}")
+                        print(
+                            f"AO Match: Complex MO: {best_ao_match['complex_mo_info']['name']} -> Simple MO: {best_ao_match['simple_mo_info']['name']}, "
+                            f"AO Std Dev: {best_ao_match['ao_std_dev']:.4f}, Volumetric Correlation: {best_ao_match['volumetric_correlation']:.4f}, "
+                            f"Energy Shift: {best_ao_match['energy_shift']:.4f}\n"
+                        )
                         matches.append({
                             'match_type': 'ao',
                             **best_ao_match
