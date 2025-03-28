@@ -254,16 +254,16 @@ class Lobster_ILDOS_Analysis:
         return matches, all_pairs
         
 # Set up directories and paths
-simple_calc_dir = "C:/Users/benka/Documents/LOBSTER_run4/"
-complex_calc_dir = "C:/Users/benka/Documents/LOBSTER_run2_AuNHC/"
-mo_diagram_simple_path = os.path.join(simple_calc_dir, "C13N2H18_1.MO_Diagram.lobster")
-mo_diagram_complex_path = os.path.join(complex_calc_dir, "AuC13N2H18_1.MO_Diagram.lobster")
+simple_calc_dir = "simple_filepath"
+complex_calc_dir = "complex_filepath"
+mo_diagram_simple_path = os.path.join(simple_calc_dir, "simple.MO_Diagram.lobster")
+mo_diagram_complex_path = os.path.join(complex_calc_dir, "copmlicated.MO_Diagram.lobster")
 
 # Create the LobsterAnalysis object
 analysis = LobsterAnalysis(simple_calc_dir, complex_calc_dir, mo_diagram_simple_path, mo_diagram_complex_path)
 
 # Run the comparison and write the results to a text file
-output_dir = 'C:/Users/benka/Documents/AuC13N2H18_C13N2H18_ILDOS'  # Specify the output file path
+output_dir = 'Output_filepath'  # Specify the output file path
 analysis.compare_mo_cube_and_orbital_contributions(output_dir=output_dir)
 
 print(f"Results have been written to {output_dir}.")
