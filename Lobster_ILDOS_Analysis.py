@@ -88,171 +88,156 @@ class Lobster_ILDOS_Analysis:
         # Ensure the output directory exists
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
+        print(f"Output directory: {output_dir}")  # Debugging: Confirm output directory
     
-        # Initialize lists for storing data
-        all_pairs = []  # List to store all intermediate pairs
-        matches = []
+        # Define filenames
+        all_pairs_file_name = "allpairs.txt"
+        matches_file_name = "matches.txt"
     
-        # Retrieve all cube files from the complex and simple directories
-        complex_files = [f for f in os.listdir(self.complex_dir) if f.endswith('.cube')]
-        simple_files = [f for f in os.listdir(self.simple_dir) if f.endswith('.cube')]
+        # Open the files once for writing
+        with open(os.path.join(output_dir, all_pairs_file_name), "w") as all_pairs_file, \
+             open(os.path.join(output_dir, matches_file_name), "w") as matches_file:
     
-        for c_file in complex_files:  # Iterate over all complex cube files
-            # Load data for the complex cube file
-            c_path = os.path.join(self.complex_dir, c_file)
-            c_data = self.load_cube_file_ase(c_path)
-    
-            # Match the complex MO name
-            complex_mo_name = os.path.splitext(c_file)[0].replace("_1_1_", "_1_")
-            complex_mo_info = next((mo for mo in self.mo_diagram_complex if mo['name'] == complex_mo_name), None)
-    
-            if not complex_mo_info:
-                print(f"Warning: No MO information found for {c_file}")
-                continue
-    
-            best_volumetric_match = None
-            best_volumetric_correlation = -1
-            best_ao_match = None
-            best_ao_std_dev = float('inf')
-    
-            for s_file in simple_files:  # Compare against all simple system cube files
-                # Load data for the simple cube file
-                s_path = os.path.join(self.simple_dir, s_file)
-                s_data = self.load_cube_file_ase(s_path)
-    
-                # Match the simple MO name
-                simple_mo_name = os.path.splitext(s_file)[0].replace("_1_1_", "_1_")
-                simple_mo_info = next((mo for mo in self.mo_diagram_simple if mo['name'] == simple_mo_name), None)
-    
-                if not simple_mo_info:
-                    continue
-    
-                energy_shift = complex_mo_info['energy'] - simple_mo_info['energy']
-                correlation = np.corrcoef(s_data.flatten(), c_data.flatten())[0, 1]
-    
-                if correlation > best_volumetric_correlation:
-                    best_volumetric_correlation = correlation
-                    best_volumetric_match = {
-                        'simple_file': s_file,
-                        'simple_mo_info': simple_mo_info,
-                        'correlation': correlation,
-                        'complex_file': c_file,
-                        'complex_mo_info': complex_mo_info,
-                        'energy_shift': energy_shift
-                    }
-    
-                ao_contribution_differences = simple_mo_info['ao_contributions'] - complex_mo_info['ao_contributions']
-                ao_difference_std_dev = np.std(ao_contribution_differences)
-    
-                if ao_difference_std_dev < best_ao_std_dev:
-                    best_ao_std_dev = ao_difference_std_dev
-                    best_ao_match = {
-                        'simple_file': s_file,
-                        'simple_mo_info': simple_mo_info,
-                        'ao_differences': ao_contribution_differences,
-                        'std_dev_difference': ao_difference_std_dev,
-                        'complex_file': c_file,
-                        'complex_mo_info': complex_mo_info,
-                        'energy_shift': energy_shift
-                    }
-    
-                # Save all intermediate results and print immediately
-                all_pair = {
-                    'complex_file': c_file,
-                    'complex_mo_info': complex_mo_info,
-                    'simple_file': s_file,
-                    'simple_mo_info': simple_mo_info,
-                    'volumetric_correlation': correlation,
-                    'ao_std_dev': ao_difference_std_dev,
-                    'energy_shift': energy_shift
-                }
-                all_pairs.append(all_pair)
-    
-                print(
-                    f"Complex MO: {complex_mo_name} -> Simple MO: {simple_mo_name}, "
-                    f"Volumetric Correlation: {correlation:.4f}, AO Std Dev: {ao_difference_std_dev:.4f}, "
-                    f"Energy Shift: {energy_shift:.4f}"
-                )
-    
-            if best_volumetric_match and best_ao_match and best_volumetric_match['simple_file'] == best_ao_match['simple_file']:
-                match = {
-                    'match_type': 'combined',
-                    **best_volumetric_match,
-                    'ao_std_dev': best_ao_match['std_dev_difference']
-                }
-            else:
-                if best_volumetric_match:
-                    match = {
-                        'match_type': 'volumetric',
-                        **best_volumetric_match,
-                        'ao_std_dev': best_ao_std_dev
-                    }
-                if best_ao_match:
-                    match = {
-                        'match_type': 'ao',
-                        **best_ao_match,
-                        'volumetric_correlation': best_volumetric_correlation
-                    }
-            matches.append(match)
-    
-            # Print the match immediately after determining it
-            if match['match_type'] == 'combined':
-                print(
-                    f"Combined Match: Complex MO: {match['complex_mo_info']['name']} -> Simple MO: {match['simple_mo_info']['name']}, "
-                    f"Volumetric Correlation: {match['correlation']:.4f}, AO Std Dev: {match['ao_std_dev']:.4f}, "
-                    f"Energy Shift: {match['energy_shift']:.4f}"
-                )
-            elif match['match_type'] == 'volumetric':
-                print(
-                    f"Volumetric Match: Complex MO: {match['complex_mo_info']['name']} -> Simple MO: {match['simple_mo_info']['name']}, "
-                    f"Volumetric Correlation: {match['correlation']:.4f}, AO Std Dev: {match['ao_std_dev']:.4f}, "
-                    f"Energy Shift: {match['energy_shift']:.4f}"
-                )
-            elif match['match_type'] == 'ao':
-                print(
-                    f"AO Match: Complex MO: {match['complex_mo_info']['name']} -> Simple MO: {match['simple_mo_info']['name']}, "
-                    f"AO Std Dev: {match['std_dev_difference']:.4f}, Volumetric Correlation: {match['volumetric_correlation']:.4f}, "
-                    f"Energy Shift: {match['energy_shift']:.4f}"
-                )
-    
-        # Write all pairs to a file
-        all_pairs_filepath = os.path.join(output_dir, "allpairs.txt")
-        with open(all_pairs_filepath, "w") as all_pairs_file:
+            # Write headers to the files
             all_pairs_file.write("All Pairs:\n")
-            for pair in all_pairs:
-                all_pairs_file.write(
-                    f"Complex File: {pair['complex_file']}, Simple File: {pair['simple_file']}, "
-                    f"Volumetric Correlation: {pair['volumetric_correlation']:.4f}, "
-                    f"AO Std Dev: {pair['ao_std_dev']:.4f}, Energy Shift: {pair['energy_shift']:.4f}\n"
-                )
-    
-        # Write matches to a separate file
-        matches_filepath = os.path.join(output_dir, "matches.txt")
-        with open(matches_filepath, "w") as matches_file:
+            all_pairs_file.flush()
             matches_file.write("Matches:\n")
-            for match in matches:
-                if match['match_type'] == 'combined':
-                    matches_file.write(
-                        f"Combined Match: Complex MO: {match['complex_mo_info']['name']} -> Simple MO: {match['simple_mo_info']['name']}, "
-                        f"Volumetric Correlation: {match['correlation']:.4f}, AO Std Dev: {match['ao_std_dev']:.4f}, "
-                        f"Energy Shift: {match['energy_shift']:.4f}\n"
-                    )
-                elif match['match_type'] == 'volumetric':
-                    matches_file.write(
-                        f"Volumetric Match: Complex MO: {match['complex_mo_info']['name']} -> Simple MO: {match['simple_mo_info']['name']}, "
-                        f"Volumetric Correlation: {match['correlation']:.4f}, AO Std Dev: {match['ao_std_dev']:.4f}, "
-                        f"Energy Shift: {match['energy_shift']:.4f}\n"
-                    )
-                elif match['match_type'] == 'ao':
-                    matches_file.write(
-                        f"AO Match: Complex MO: {match['complex_mo_info']['name']} -> Simple MO: {match['simple_mo_info']['name']}, "
-                        f"AO Std Dev: {match['std_dev_difference']:.4f}, Volumetric Correlation: {match['volumetric_correlation']:.4f}, "
-                        f"Energy Shift: {match['energy_shift']:.4f}\n"
-                    )
+            matches_file.flush()
+            print("Headers written successfully.")  # Debugging: Confirm headers written
     
-        # Return the matches and all pairs
-        return matches, all_pairs
+            # Initialize lists for storing data
+            all_pairs = []  # List to store all intermediate pairs
+            matches = []
+    
+            # Retrieve all cube files from the complex and simple directories
+            complex_files = [f for f in os.listdir(self.complex_dir) if f.endswith('.cube')]
+            simple_files = [f for f in os.listdir(self.simple_dir) if f.endswith('.cube')]
+            #print(f"Complex files: {complex_files}")  # Debugging: Confirm complex files
+            #print(f"Simple files: {simple_files}")    # Debugging: Confirm simple files
+    
+            for c_file in complex_files:  # Iterate over all complex cube files
+                c_path = os.path.join(self.complex_dir, c_file)
+                c_data = self.load_cube_file_ase(c_path)
+            
+                complex_mo_name = os.path.splitext(c_file)[0].replace("_1_1_", "_1_")
+                complex_mo_info = next((mo for mo in self.mo_diagram_complex if mo['name'] == complex_mo_name), None)
+            
+                if not complex_mo_info:
+                    print(f"Warning: No MO information found for {c_file}")
+                    continue
+            
+                # Initialize a temporary list for pairs associated with this complex file
+                all_simple_pairs = []
+            
+                for s_file in simple_files:  # Compare against all simple system cube files
+                    s_path = os.path.join(self.simple_dir, s_file)
+                    s_data = self.load_cube_file_ase(s_path)
+            
+                    simple_mo_name = os.path.splitext(s_file)[0].replace("_1_1_", "_1_")
+                    simple_mo_info = next((mo for mo in self.mo_diagram_simple if mo['name'] == simple_mo_name), None)
+            
+                    if not simple_mo_info:
+                        continue
+            
+                    energy_shift = complex_mo_info['energy'] - simple_mo_info['energy']
+                    correlation = np.corrcoef(s_data.flatten(), c_data.flatten())[0, 1]
+                    ao_std_dev = np.std(simple_mo_info['ao_contributions'] - complex_mo_info['ao_contributions'])
+            
+                    # Create the pair for this specific combination
+                    pair = {
+                        'complex_file': c_file,
+                        'complex_mo_info': complex_mo_info,
+                        'simple_file': s_file,
+                        'simple_mo_info': simple_mo_info,
+                        'volumetric_correlation': correlation,
+                        'ao_std_dev': ao_std_dev,
+                        'energy_shift': energy_shift
+                    }
+            
+                    # Add pair to the temporary list and the global list
+                    all_simple_pairs.append(pair)
+                    all_pairs.append(pair)
+            
+                    # Write the pair immediately to allpairs.txt
+                    all_pairs_file.write(
+                        f"Complex File: {pair['complex_file']}, Simple File: {pair['simple_file']}, "
+                        f"Volumetric Correlation: {pair['volumetric_correlation']:.4f}, "
+                        f"AO Std Dev: {pair['ao_std_dev']:.4f}, Energy Shift: {pair['energy_shift']:.4f}\n"
+                    )
+                    all_pairs_file.flush()  # Force the buffer to flush
+                    # Print the pair to the console immediately
+                    '''
+                    print(
+                        f"Complex File: {pair['complex_file']}, Simple File: {pair['simple_file']}, "
+                        f"Volumetric Correlation: {pair['volumetric_correlation']:.4f}, "
+                        f"AO Std Dev: {pair['ao_std_dev']:.4f}, Energy Shift: {pair['energy_shift']:.4f}\n"
+                    )
+                    '''
+                # Determine best matches using the temporary list
+                best_volumetric_match = max(
+                    all_simple_pairs,
+                    key=lambda pair: pair['volumetric_correlation'],
+                    default=None
+                )
+            
+                best_ao_match = min(
+                    all_simple_pairs,
+                    key=lambda pair: pair['ao_std_dev'],
+                    default=None
+                )
+            
+                # Print and append the best matches
+                if best_volumetric_match:
+                    print(f"Best Volumetric Match for {c_file}: {best_volumetric_match}")
+                    matches.append({
+                        'match_type': 'volumetric',
+                        **best_volumetric_match
+                    })
+            
+                if best_ao_match:
+                    print(f"Best AO Match for {c_file}: {best_ao_match}")
+                    matches.append({
+                        'match_type': 'ao',
+                        **best_ao_match
+                    })
+            
+                # If both align (combined match), append separately
+                if best_volumetric_match and best_ao_match and best_volumetric_match['simple_file'] == best_ao_match['simple_file']:
+                    combined_match = {
+                        'match_type': 'combined',
+                        **best_volumetric_match,
+                        'ao_std_dev': best_ao_match['ao_std_dev']
+                    }
+                    print(f"Combined Match for {c_file}: {combined_match}")
+                    matches.append(combined_match)
+            
+                # Write each match immediately to matches.txt
+                for match in matches:
+                    if match['match_type'] == 'combined':
+                        matches_file.write(
+                            f"Combined Match: Complex MO: {match['complex_mo_info']['name']} -> Simple MO: {match['simple_mo_info']['name']}, "
+                            f"Volumetric Correlation: {match['volumetric_correlation']:.4f}, AO Std Dev: {match['ao_std_dev']:.4f}, "
+                            f"Energy Shift: {match['energy_shift']:.4f}\n"
+                        )
+                        matches_file.flush()
+                    elif match['match_type'] == 'volumetric':
+                        matches_file.write(
+                            f"Volumetric Match: Complex MO: {match['complex_mo_info']['name']} -> Simple MO: {match['simple_mo_info']['name']}, "
+                            f"Volumetric Correlation: {match['volumetric_correlation']:.4f}, AO Std Dev: {match['ao_std_dev']:.4f}, "
+                            f"Energy Shift: {match['energy_shift']:.4f}\n"
+                        )
+                        matches_file.flush()
+                    elif match['match_type'] == 'ao':
+                        matches_file.write(
+                            f"AO Match: Complex MO: {match['complex_mo_info']['name']} -> Simple MO: {match['simple_mo_info']['name']}, "
+                            f"AO Std Dev: {match['ao_std_dev']:.4f}, Volumetric Correlation: {match['volumetric_correlation']:.4f}, "
+                            f"Energy Shift: {match['energy_shift']:.4f}\n"
+                        )
+                        matches_file.flush()
         
+            # Return the matches and all pairs
+            return matches, all_pairs
+         
 # Set up directories and paths
 simple_calc_dir = "simple_filepath"
 complex_calc_dir = "complex_filepath"
@@ -260,10 +245,10 @@ mo_diagram_simple_path = os.path.join(simple_calc_dir, "simple.MO_Diagram.lobste
 mo_diagram_complex_path = os.path.join(complex_calc_dir, "copmlicated.MO_Diagram.lobster")
 
 # Create the LobsterAnalysis object
-analysis = LobsterAnalysis(simple_calc_dir, complex_calc_dir, mo_diagram_simple_path, mo_diagram_complex_path)
+analysis = Lobster_ILDOS_Analysis(simple_calc_dir, complex_calc_dir, mo_diagram_simple_path, mo_diagram_complex_path)
 
 # Run the comparison and write the results to a text file
-output_dir = 'Output_filepath'  # Specify the output file path
+output_dir = 'Output_Directory'  # Specify the output file path
 analysis.compare_mo_cube_and_orbital_contributions(output_dir=output_dir)
 
 print(f"Results have been written to {output_dir}.")
