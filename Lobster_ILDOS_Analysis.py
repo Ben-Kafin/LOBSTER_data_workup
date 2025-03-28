@@ -172,36 +172,21 @@ class Lobster_ILDOS_Analysis:
                         f"Volumetric Correlation: {pair['volumetric_correlation']:.4f}, "
                         f"AO Std Dev: {pair['ao_std_dev']:.4f}, Energy Shift: {pair['energy_shift']:.4f}\n"
                     )
-                    '''
+                   '''
                 # Determine best matches using the temporary list
                 best_volumetric_match = max(
                     all_simple_pairs,
                     key=lambda pair: pair['volumetric_correlation'],
                     default=None
                 )
-            
+                
                 best_ao_match = min(
                     all_simple_pairs,
                     key=lambda pair: pair['ao_std_dev'],
                     default=None
                 )
-            
-                # Print and append the best matches
-                if best_volumetric_match:
-                    print(f"Best Volumetric Match for {c_file}: {best_volumetric_match}")
-                    matches.append({
-                        'match_type': 'volumetric',
-                        **best_volumetric_match
-                    })
-            
-                if best_ao_match:
-                    print(f"Best AO Match for {c_file}: {best_ao_match}")
-                    matches.append({
-                        'match_type': 'ao',
-                        **best_ao_match
-                    })
-            
-                # If both align (combined match), append separately
+                
+                # Check if the matches align (combined match)
                 if best_volumetric_match and best_ao_match and best_volumetric_match['simple_file'] == best_ao_match['simple_file']:
                     combined_match = {
                         'match_type': 'combined',
@@ -210,30 +195,41 @@ class Lobster_ILDOS_Analysis:
                     }
                     print(f"Combined Match for {c_file}: {combined_match}")
                     matches.append(combined_match)
-            
-                # Write each match immediately to matches.txt
-                for match in matches:
-                    if match['match_type'] == 'combined':
+                
+                    # Write the combined match immediately to matches.txt
+                    matches_file.write(
+                        f"Combined Match: Complex MO: {combined_match['complex_mo_info']['name']} -> Simple MO: {combined_match['simple_mo_info']['name']}, "
+                        f"Volumetric Correlation: {combined_match['volumetric_correlation']:.4f}, AO Std Dev: {combined_match['ao_std_dev']:.4f}, "
+                        f"Energy Shift: {combined_match['energy_shift']:.4f}\n"
+                    )
+                    matches_file.flush()  # Flush the file buffer
+                else:
+                    # If no combined match exists, write individual matches
+                    if best_volumetric_match:
+                        print(f"Best Volumetric Match for {c_file}: {best_volumetric_match}")
+                        matches.append({
+                            'match_type': 'volumetric',
+                            **best_volumetric_match
+                        })
                         matches_file.write(
-                            f"Combined Match: Complex MO: {match['complex_mo_info']['name']} -> Simple MO: {match['simple_mo_info']['name']}, "
-                            f"Volumetric Correlation: {match['volumetric_correlation']:.4f}, AO Std Dev: {match['ao_std_dev']:.4f}, "
-                            f"Energy Shift: {match['energy_shift']:.4f}\n"
+                            f"Volumetric Match: Complex MO: {best_volumetric_match['complex_mo_info']['name']} -> Simple MO: {best_volumetric_match['simple_mo_info']['name']}, "
+                            f"Volumetric Correlation: {best_volumetric_match['volumetric_correlation']:.4f}, AO Std Dev: {best_volumetric_match['ao_std_dev']:.4f}, "
+                            f"Energy Shift: {best_volumetric_match['energy_shift']:.4f}\n"
                         )
-                        matches_file.flush()
-                    elif match['match_type'] == 'volumetric':
+                        matches_file.flush()  # Flush the file buffer
+                
+                    if best_ao_match:
+                        print(f"Best AO Match for {c_file}: {best_ao_match}")
+                        matches.append({
+                            'match_type': 'ao',
+                            **best_ao_match
+                        })
                         matches_file.write(
-                            f"Volumetric Match: Complex MO: {match['complex_mo_info']['name']} -> Simple MO: {match['simple_mo_info']['name']}, "
-                            f"Volumetric Correlation: {match['volumetric_correlation']:.4f}, AO Std Dev: {match['ao_std_dev']:.4f}, "
-                            f"Energy Shift: {match['energy_shift']:.4f}\n"
+                            f"AO Match: Complex MO: {best_ao_match['complex_mo_info']['name']} -> Simple MO: {best_ao_match['simple_mo_info']['name']}, "
+                            f"AO Std Dev: {best_ao_match['ao_std_dev']:.4f}, Volumetric Correlation: {best_ao_match['volumetric_correlation']:.4f}, "
+                            f"Energy Shift: {best_ao_match['energy_shift']:.4f}\n"
                         )
-                        matches_file.flush()
-                    elif match['match_type'] == 'ao':
-                        matches_file.write(
-                            f"AO Match: Complex MO: {match['complex_mo_info']['name']} -> Simple MO: {match['simple_mo_info']['name']}, "
-                            f"AO Std Dev: {match['ao_std_dev']:.4f}, Volumetric Correlation: {match['volumetric_correlation']:.4f}, "
-                            f"Energy Shift: {match['energy_shift']:.4f}\n"
-                        )
-                        matches_file.flush()
+                        matches_file.flush()  # Flush the file buffer
         
             # Return the matches and all pairs
             return matches, all_pairs
