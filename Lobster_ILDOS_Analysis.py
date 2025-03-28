@@ -139,8 +139,21 @@ class Lobster_ILDOS_Analysis:
             
                     energy_shift = complex_mo_info['energy'] - simple_mo_info['energy']
                     correlation = np.corrcoef(s_data.flatten(), c_data.flatten())[0, 1]
-                    ao_std_dev = np.std(simple_mo_info['ao_contributions'] - complex_mo_info['ao_contributions'])
-            
+                    # Calculate AO contribution differences
+                    ao_contribution_differences = simple_mo_info['ao_contributions'] - complex_mo_info['ao_contributions']
+                    
+                    # Step 1: Compute the standard deviations for AO differences (weights)
+                    initial_weights = np.std(ao_contribution_differences)
+                    
+                    # Step 2: Normalize the weights to sum to 1
+                    normalized_weights = initial_weights / np.sum(initial_weights)
+                    
+                    # Step 3: Compute the weighted mean
+                    weighted_mean = np.sum(normalized_weights * ao_contribution_differences) / np.sum(normalized_weights)
+                    
+                    # Step 4: Compute the weighted standard deviation
+                    weighted_std_dev = np.sqrt(np.sum(normalized_weights * (ao_contribution_differences - weighted_mean)**2) / np.sum(normalized_weights))
+                    
                     # Create the pair for this specific combination
                     pair = {
                         'complex_file': c_file,
@@ -148,7 +161,7 @@ class Lobster_ILDOS_Analysis:
                         'simple_file': s_file,
                         'simple_mo_info': simple_mo_info,
                         'volumetric_correlation': correlation,
-                        'ao_std_dev': ao_std_dev,
+                        'ao_std_dev': weighted_std_dev,
                         'energy_shift': energy_shift
                     }
             
