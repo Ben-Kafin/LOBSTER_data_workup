@@ -88,7 +88,6 @@ class Lobster_ILDOS_Analysis:
         # Ensure the output directory exists
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
-        print(f"Output directory: {output_dir}")  # Debugging: Confirm output directory
     
         # Define filenames
         all_pairs_file_name = "allpairs.txt"
@@ -103,7 +102,6 @@ class Lobster_ILDOS_Analysis:
             all_pairs_file.flush()
             matches_file.write("Matches:\n")
             matches_file.flush()
-            print("Headers written successfully.")  # Debugging: Confirm headers written
     
             # Initialize lists for storing data
             all_pairs = []  # List to store all intermediate pairs
