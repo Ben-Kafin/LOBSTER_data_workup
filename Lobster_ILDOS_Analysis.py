@@ -139,20 +139,13 @@ class Lobster_ILDOS_Analysis:
             
                     energy_shift = complex_mo_info['energy'] - simple_mo_info['energy']
                     correlation = np.corrcoef(s_data.flatten(), c_data.flatten())[0, 1]
-                    # Calculate AO contribution differences
-                    ao_contribution_differences = simple_mo_info['ao_contributions'] - complex_mo_info['ao_contributions']
                     
-                    # Step 1: Compute the standard deviations for AO differences (weights)
-                    initial_weights = np.std(ao_contribution_differences)
+                    # Step 1: Normalize AO contributions
+                    simple_normalized = simple_mo_info['ao_contributions'] / np.linalg.norm(simple_mo_info['ao_contributions'])
+                    complex_normalized = complex_mo_info['ao_contributions'] / np.linalg.norm(complex_mo_info['ao_contributions'])
                     
-                    # Step 2: Normalize the weights to sum to 1
-                    normalized_weights = initial_weights / np.sum(initial_weights)
-                    
-                    # Step 3: Compute the weighted mean
-                    weighted_mean = np.sum(normalized_weights * ao_contribution_differences) / np.sum(normalized_weights)
-                    
-                    # Step 4: Compute the weighted standard deviation
-                    weighted_std_dev = np.sqrt(np.sum(normalized_weights * (ao_contribution_differences - weighted_mean)**2) / np.sum(normalized_weights))
+                    # Step 2: Compute cosine similarity (or overlap)
+                    ao_overlap = np.dot(simple_normalized, complex_normalized)
                     
                     # Create the pair for this specific combination
                     pair = {
@@ -161,7 +154,7 @@ class Lobster_ILDOS_Analysis:
                         'simple_file': s_file,
                         'simple_mo_info': simple_mo_info,
                         'volumetric_correlation': correlation,
-                        'ao_std_dev': weighted_std_dev,
+                        'ao_overlap': ao_overlap,
                         'energy_shift': energy_shift
                     }
             
@@ -174,14 +167,14 @@ class Lobster_ILDOS_Analysis:
                     print(
                         f"Complex File: {pair['complex_file']}, Simple File: {pair['simple_file']}, "
                         f"Volumetric Correlation: {pair['volumetric_correlation']:.4f}, "
-                        f"AO Std Dev: {pair['ao_std_dev']:.4f}, Energy Shift: {pair['energy_shift']:.4f}\n"
+                        f"AO Overlap: {pair['ao_overlap']:.4f}, Energy Shift: {pair['energy_shift']:.4f}\n"
                     )
                    # '''
                     # Write the pair immediately to allpairs.txt
                     all_pairs_file.write(
                         f"Complex File: {pair['complex_file']}, Simple File: {pair['simple_file']}, "
                         f"Volumetric Correlation: {pair['volumetric_correlation']:.4f}, "
-                        f"AO Std Dev: {pair['ao_std_dev']:.4f}, Energy Shift: {pair['energy_shift']:.4f}\n"
+                        f"AO Overlap: {pair['ao_overlap']:.4f}, Energy Shift: {pair['energy_shift']:.4f}\n"
                     )
                     all_pairs_file.flush()  # Force the buffer to flush
                     
@@ -192,9 +185,9 @@ class Lobster_ILDOS_Analysis:
                     default=None
                 )
                 
-                best_ao_match = min(
+                best_ao_match = max(
                     all_simple_pairs,
-                    key=lambda pair: pair['ao_std_dev'],
+                    key=lambda pair: pair['ao_overlap'],
                     default=None
                 )
                 
@@ -203,11 +196,11 @@ class Lobster_ILDOS_Analysis:
                     combined_match = {
                         'match_type': 'combined',
                         **best_volumetric_match,
-                        'ao_std_dev': best_ao_match['ao_std_dev']
+                        'ao_overlap': best_ao_match['ao_overlap']
                     }
                     print(
                         f"Combined Match: Complex MO: {combined_match['complex_mo_info']['name']} -> Simple MO: {combined_match['simple_mo_info']['name']}, "
-                        f"Volumetric Correlation: {combined_match['volumetric_correlation']:.4f}, AO Std Dev: {combined_match['ao_std_dev']:.4f}, "
+                        f"Volumetric Correlation: {combined_match['volumetric_correlation']:.4f}, AO Overlap: {combined_match['ao_overlap']:.4f}, "
                         f"Energy Shift: {combined_match['energy_shift']:.4f}\n"
                     )
                     matches.append(combined_match)
@@ -215,7 +208,7 @@ class Lobster_ILDOS_Analysis:
                     # Write the combined match immediately to matches.txt
                     matches_file.write(
                         f"Combined Match: Complex MO: {combined_match['complex_mo_info']['name']} -> Simple MO: {combined_match['simple_mo_info']['name']}, "
-                        f"Volumetric Correlation: {combined_match['volumetric_correlation']:.4f}, AO Std Dev: {combined_match['ao_std_dev']:.4f}, "
+                        f"Volumetric Correlation: {combined_match['volumetric_correlation']:.4f}, AO Overlap: {combined_match['ao_overlap']:.4f}, "
                         f"Energy Shift: {combined_match['energy_shift']:.4f}\n"
                     )
                     matches_file.flush()  # Flush the file buffer
@@ -224,7 +217,7 @@ class Lobster_ILDOS_Analysis:
                     if best_volumetric_match:
                         print(
                             f"Volumetric Match: Complex MO: {best_volumetric_match['complex_mo_info']['name']} -> Simple MO: {best_volumetric_match['simple_mo_info']['name']}, "
-                            f"Volumetric Correlation: {best_volumetric_match['volumetric_correlation']:.4f}, AO Std Dev: {best_volumetric_match['ao_std_dev']:.4f}, "
+                            f"Volumetric Correlation: {best_volumetric_match['volumetric_correlation']:.4f}, AO Overlap: {best_volumetric_match['ao_overlap']:.4f}, "
                             f"Energy Shift: {best_volumetric_match['energy_shift']:.4f}\n"
                         )
                         matches.append({
@@ -233,7 +226,7 @@ class Lobster_ILDOS_Analysis:
                         })
                         matches_file.write(
                             f"Volumetric Match: Complex MO: {best_volumetric_match['complex_mo_info']['name']} -> Simple MO: {best_volumetric_match['simple_mo_info']['name']}, "
-                            f"Volumetric Correlation: {best_volumetric_match['volumetric_correlation']:.4f}, AO Std Dev: {best_volumetric_match['ao_std_dev']:.4f}, "
+                            f"Volumetric Correlation: {best_volumetric_match['volumetric_correlation']:.4f}, AO Overlap: {best_volumetric_match['ao_overlap']:.4f}, "
                             f"Energy Shift: {best_volumetric_match['energy_shift']:.4f}\n"
                         )
                         matches_file.flush()  # Flush the file buffer
@@ -241,7 +234,7 @@ class Lobster_ILDOS_Analysis:
                     if best_ao_match:
                         print(
                             f"AO Match: Complex MO: {best_ao_match['complex_mo_info']['name']} -> Simple MO: {best_ao_match['simple_mo_info']['name']}, "
-                            f"AO Std Dev: {best_ao_match['ao_std_dev']:.4f}, Volumetric Correlation: {best_ao_match['volumetric_correlation']:.4f}, "
+                            f"AO Overlap: {best_ao_match['ao_overlap']:.4f}, Volumetric Correlation: {best_ao_match['volumetric_correlation']:.4f}, "
                             f"Energy Shift: {best_ao_match['energy_shift']:.4f}\n"
                         )
                         matches.append({
@@ -250,7 +243,7 @@ class Lobster_ILDOS_Analysis:
                         })
                         matches_file.write(
                             f"AO Match: Complex MO: {best_ao_match['complex_mo_info']['name']} -> Simple MO: {best_ao_match['simple_mo_info']['name']}, "
-                            f"AO Std Dev: {best_ao_match['ao_std_dev']:.4f}, Volumetric Correlation: {best_ao_match['volumetric_correlation']:.4f}, "
+                            f"AO Overlap: {best_ao_match['ao_overlap']:.4f}, Volumetric Correlation: {best_ao_match['volumetric_correlation']:.4f}, "
                             f"Energy Shift: {best_ao_match['energy_shift']:.4f}\n"
                         )
                         matches_file.flush()  # Flush the file buffer
