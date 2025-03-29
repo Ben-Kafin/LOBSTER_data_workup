@@ -187,7 +187,7 @@ class Lobster_ILDOS_Analysis:
                 
                 best_ao_match = max(
                     all_simple_pairs,
-                    key=lambda pair: pair['ao_overlap'],
+                    key=lambda pair: abs(pair['ao_overlap']),
                     default=None
                 )
                 
