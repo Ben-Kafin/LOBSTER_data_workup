@@ -67,10 +67,11 @@ class MOPM:
 
         return mo_data
 
-    def compare_mo_contributions(self):
+    def compare_mo_contributions(self, output_file_path=None):
         """
         Compare all MOs between the simple and complex systems based on AO contributions.
         Select the simple MO with the projection closest to ±1 for each complex MO.
+        Optionally write the results to an output file.
         """
         matches = []
     
@@ -102,7 +103,16 @@ class MOPM:
             
             # Save the best match for the current complex MO
             matches.append(best_match)
-    
+        
+        # Write matches to output file if specified
+        if output_file_path:
+            with open(output_file_path, 'w') as f:
+                f.write("Complex MO\tComplex Energy (eV)\tSimple MO\tSimple Energy (eV)\tAO Overlap\tEnergy Shift (eV)\n")
+                for match in matches:
+                    f.write(f"{match['complex_mo']}\t{match['complex_mo_energy']:.4f}\t"
+                            f"{match['simple_mo']}\t{match['simple_mo_energy']:.4f}\t"
+                            f"{match['ao_overlap']:.4f}\t{match['energy_shift']:.4f}\n")
+
         return matches
 
 # Example usage:
