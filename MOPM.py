@@ -121,7 +121,7 @@ mo_diagram_complex_path = "complex_MO_diagram.lobster"
 output_file_path = 'matches_output.txt'
 
 MOPM = MOPM(mo_diagram_simple_path, mo_diagram_complex_path)
-matches = MOPM.compare_mo_contributions()
+matches = MOPM.compare_mo_contributions(output_file_path)
 
 for match in matches:
     print(f"Complex MO: {match['complex_mo']}, {match['complex_mo_energy']}eV, Simple MO: {match['simple_mo']}, {match['simple_mo_energy']}eV "
