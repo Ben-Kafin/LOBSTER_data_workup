@@ -66,8 +66,7 @@ class MOPM:
             })
 
         return mo_data
-
-    def compare_mo_contributions(self, output_file_path=None):
+    def compare_mo_contributions(self, output_file_path=None, energy_shift_threshold=0.5):
         """
         Compare all MOs between the simple and complex systems based on AO contributions.
         Select the simple MO with the projection closest to ±1 for each complex MO.
@@ -102,7 +101,8 @@ class MOPM:
                     }
             
             # Save the best match for the current complex MO
-            matches.append(best_match)
+            if best_match and abs(best_match['energy_shift']) >= energy_shift_threshold:
+                matches.append(best_match)
         
         # Write matches to output file if specified
         if output_file_path:
