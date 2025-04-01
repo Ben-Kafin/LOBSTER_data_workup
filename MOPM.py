@@ -118,6 +118,7 @@ class MOPM:
 # Example usage:
 mo_diagram_simple_path = "simple_MO_diagram.lobster"
 mo_diagram_complex_path = "complex_MO_diagram.lobster"
+output_file_path = 'matches_output.txt'
 
 MOPM = MOPM(mo_diagram_simple_path, mo_diagram_complex_path)
 matches = MOPM.compare_mo_contributions()
