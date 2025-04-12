@@ -86,7 +86,7 @@ class DOSCAR_LCFO:
     def _parse_doscar(self):
         """
         Parses the DOSCAR.LCFO file to extract TDOS and pMODOS data.
-        Renames 'Au' fragments dynamically based on their corresponding atom number from the POSCAR file.
+        Handles spin polarization, integrated densities, and assigns global energies.
         """
         with open(self._doscar, "r") as file:
             # Skip the first 5 lines (headers and metadata)
@@ -113,20 +113,28 @@ class DOSCAR_LCFO:
                 if not line or any(char.isalpha() for char in line.split()):  # Skip metadata lines
                     continue
                 columns = [float(x) for x in line.split()]
+    
+                # Use number of columns to determine spin polarization
+                if len(columns) == 3:
+                    self._is_spin_polarized = False
+                elif len(columns) == 5:
+                    self._is_spin_polarized = True
+                else:
+                    raise ValueError(f"Unexpected number of columns in TDOS row: {len(columns)}.")
+    
                 energies.append(columns[0])  # Energy column
                 spin_up_densities.append(columns[1])  # Spin-up density
-                if len(columns) > 2:  # Spin-down density (if spin-polarized)
-                    spin_down_densities.append(columns[2])
+                if self._is_spin_polarized:
+                    spin_down_densities.append(columns[2])  # Spin-down density
     
-            # Determine spin polarization
-            self._is_spin_polarized = len(spin_down_densities) > 0
+            # Assign TDOS densities
             tdensities = {Spin.up: np.array(spin_up_densities)}
             if self._is_spin_polarized:
                 tdensities[Spin.down] = np.array(spin_down_densities)
     
             # Assign TDOS and energies
             self._tdos = Dos(efermi, np.array(energies), tdensities)
-            self._energies = np.array(energies)
+            self._energies = np.array(energies)  # Store energies globally
     
             # Parse fragments and orbitals sequentially for pMODOS
             pmodos = defaultdict(lambda: defaultdict(lambda: {Spin.up: [], Spin.down: []}))
@@ -161,41 +169,41 @@ class DOSCAR_LCFO:
                 rows_read = 0  # Track the number of rows processed
                 while line and (";" not in line or fragment_index == len(fragments)):  # Keep reading numeric rows
                     columns = [float(x) for x in line.split()]
-                    expected_columns = 1 + 2 * num_orbitals  # Calculate expected columns dynamically
+                    # Determine the expected number of columns based on spin polarization
+                    if self._is_spin_polarized:
+                        expected_columns = 1 + 2 * num_orbitals  # Energy + spin-up + spin-down per orbital
+                    else:
+                        expected_columns = 1 + num_orbitals  # Energy + spin-up per orbital
     
-                    if len(columns) != expected_columns:  # Validate column count
+                    # Validate the number of columns
+                    if len(columns) != expected_columns:
                         raise ValueError(f"Column mismatch for fragment '{fragment_name}'. "
                                          f"Expected {expected_columns} columns, but got {len(columns)}.")
     
-                    energy = columns[0]
+                    energy = columns[0]  # Energy is always the first column
                     for i, orbital in enumerate(orbitals):
-                        spin_up_col = (i * 2) + 1
-                        spin_down_col = (i * 2) + 2
-                        pmodos[fragment_name][orbital][Spin.up].append(columns[spin_up_col])
-                        if self._is_spin_polarized:
+                        if not self._is_spin_polarized:
+                            # Non-spin-polarized: Energy column + spin-up densities
+                            spin_up_col = i + 1
+                            pmodos[fragment_name][orbital][Spin.up].append(columns[spin_up_col])
+                        else:
+                            # Spin-polarized: Alternate between spin-up and spin-down
+                            spin_up_col = (i * 2) + 1
+                            spin_down_col = (i * 2) + 2
+                            pmodos[fragment_name][orbital][Spin.up].append(columns[spin_up_col])
                             pmodos[fragment_name][orbital][Spin.down].append(columns[spin_down_col])
                     rows_read += 1
     
                     # Read the next line or stop processing
                     line = file.readline().strip()
     
-                    # If the end of file is reached, terminate numeric row processing
+                    # End of numeric rows for the current fragment
                     if not line:
                         print(f"End of file reached for fragment '{fragment_name}'")
                         break
     
                 # Debug output for each pMODOS row
                 print(f"Processed {rows_read} rows for fragment '{fragment_name}'")
-    
-            # Validate energy-density alignment for pMODOS
-            for fragment, orbital_data in pmodos.items():
-                for orbital, spin_data in orbital_data.items():
-                    if len(spin_data[Spin.up]) != len(self._energies):
-                        raise ValueError(f"Mismatch for fragment '{fragment}', orbital '{orbital}': "
-                                         f"{len(spin_data[Spin.up])} densities vs {len(self._energies)} energies.")
-                    if self._is_spin_polarized and len(spin_data[Spin.down]) != len(self._energies):
-                        raise ValueError(f"Spin Down mismatch for fragment '{fragment}', orbital '{orbital}': "
-                                         f"{len(spin_data[Spin.down])} densities vs {len(self._energies)} energies.")
     
             # Assign parsed pMODOS
             self._pmodos = pmodos
