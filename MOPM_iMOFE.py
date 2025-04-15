@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Apr 14 15:22:57 2025
-
-@author: Benjamin Kafin
-"""
 import numpy as np
 
 class MOPM:
@@ -341,14 +335,14 @@ complex_atoms = [(2,'N'), (13,'C'), (18,'H')]
 
 # Initialize MOPM with atom mapping
 
-mo_diagram_simple_path='C:/Users/Benjamin Kafin/Documents/VASP/NHC/IPR/lone/adatom/NHC_iPr_adatom_fcc/kpoints551/NHC/C13N2H18_1.MO_Diagram.lobster'
-mo_diagram_complex_path='C:/Users/Benjamin Kafin/Documents/VASP/NHC/IPR/lone/adatom/NHC_iPr_adatom_fcc/kpoints551/Adatom/NHC_frag/C13N2H18_1.MO_Diagram.lobster'
+mo_diagram_simple_path='filepath/MO_Diagram.lobster'
+mo_diagram_complex_path='filepath/MO_Diagram.lobster'
 
 # Initialize the MOPM instance with shorthand atom lists
 MOPM_instance = MOPM(mo_diagram_simple_path, mo_diagram_complex_path, simple_atoms, complex_atoms)
 
 # Generate matches
-matches = MOPM_instance.compare_mo_contributions(output_file_path='C:/Users/Benjamin Kafin/Documents/VASP/NHC/IPR/lone/adatom/NHC_iPr_adatom_fcc/kpoints551/matches.txt')
+matches = MOPM_instance.compare_mo_contributions(output_file_path='filepath/matches.txt')
 
 # Print matches
 print("\nMatches:")
