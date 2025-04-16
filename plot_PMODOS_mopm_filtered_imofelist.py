@@ -153,16 +153,16 @@ if __name__ == "__main__":
 
     # Initialize the IntegratedPlotter with updated MOPM class initialization
     integrated_plotter = IntegratedPlotter(
-        simple_doscar_file='C:/Users/Benjamin Kafin/Documents/VASP/NHC/IPR/lone/adatom/NHC_iPr_adatom_fcc/kpoints551/NHC/DOSCAR.LCFO.lobster',
-        simple_lcfo_file='C:/Users/Benjamin Kafin/Documents/VASP/NHC/IPR/lone/adatom/NHC_iPr_adatom_fcc/kpoints551/NHC/LCFO_Fragments.lobster',
-        simple_mo_diagram='C:/Users/Benjamin Kafin/Documents/VASP/NHC/IPR/lone/adatom/NHC_iPr_adatom_fcc/kpoints551/NHC/C13N2H18_1.MO_Diagram.lobster',
-        complex_doscar_file='C:/Users/Benjamin Kafin/Documents/VASP/NHC/IPR/lone/adatom/NHC_iPr_adatom_fcc/kpoints551/Adatom/NHC_frag/DOSCAR.LCFO.lobster',
-        complex_lcfo_file='C:/Users/Benjamin Kafin/Documents/VASP/NHC/IPR/lone/adatom/NHC_iPr_adatom_fcc/kpoints551/Adatom/NHC_frag/LCFO_Fragments.lobster',
-        complex_mo_diagram='C:/Users/Benjamin Kafin/Documents/VASP/NHC/IPR/lone/adatom/NHC_iPr_adatom_fcc/kpoints551/Adatom/NHC_frag/C13N2H18_1.MO_Diagram.lobster',
-        matches_output_path='C:/Users/Benjamin Kafin/Documents/VASP/NHC/IPR/lone/adatom/NHC_iPr_adatom_fcc/kpoints551/Adatom/NHC_frag/matches.txt',
+        simple_doscar_file='filepath/DOSCAR.LCFO.lobster',
+        simple_lcfo_file='filepath/LCFO_Fragments.lobster',
+        simple_mo_diagram='filepath/MO_Diagram.lobster',
+        complex_doscar_file='filepath/DOSCAR.LCFO.lobster',
+        complex_lcfo_file='filepath/LCFO_Fragments.lobster',
+        complex_mo_diagram='filepath/MO_Diagram.lobster',
+        matches_output_path='filepath/matches.txt',
         simple_atoms=simple_atoms,
         complex_atoms=complex_atoms
     )
 
     # Plot PMODOS curves for matches
-    integrated_plotter.plot_aggregated_pmodos(save_path='C:/Users/Benjamin Kafin/Documents/VASP/NHC/IPR/lone/adatom/NHC_iPr_adatom_fcc/kpoints551/Adatom/NHC_fragfiltered_pmodos_plot.png')
+    integrated_plotter.plot_aggregated_pmodos(save_path='filepath/filtered_pmodos_plot.png')
