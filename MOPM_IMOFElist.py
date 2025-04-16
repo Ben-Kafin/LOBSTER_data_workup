@@ -412,22 +412,22 @@ class MOPM:
     
     
 # File paths for simple and complex systems
-mo_diagram_simple_path = 'C:/Users/Benjamin Kafin/Documents/VASP/NHC/IPR/lone/adatom/NHC_iPr_adatom_fcc/kpoints551/NHC/C13N2H18_1.MO_Diagram.lobster'
-mo_diagram_complex_path = 'C:/Users/Benjamin Kafin/Documents/VASP/NHC/IPR/lone/adatom/NHC_iPr_adatom_fcc/kpoints551/Adatom/NHC_frag/C13N2H18_1.MO_Diagram.lobster'
+mo_diagram_simple_path = 'filepath/MO_Diagram.lobster'
+mo_diagram_complex_path = 'filepath/MO_Diagram.lobster'
 
-imofelist_simple_path = 'C:/Users/Benjamin Kafin/Documents/VASP/NHC/IPR/lone/adatom/NHC_iPr_adatom_fcc/kpoints551/NHC/IMOFElist.lobster'
-imofelist_complex_path = 'C:/Users/Benjamin Kafin/Documents/VASP/NHC/IPR/lone/adatom/NHC_iPr_adatom_fcc/kpoints551/Adatom/NHC_frag/IMOFElist.lobster'
+imofelist_simple_path = 'filepath/IMOFElist.lobster'
+imofelist_complex_path = 'filepath/IMOFElist.lobster'
 
 # Atom lists for simple and complex systems
-simple_atoms = [(2, 'N'), (13, 'C'), (18, 'H')]
-complex_atoms = [(2, 'N'), (13, 'C'), (18, 'H')]
+simple_atoms = [()]
+complex_atoms = [()]
 
 # Initialize the MOPM instance with file paths for MO diagrams and iMOFE lists
 MOPM_instance = MOPM(mo_diagram_simple_path, mo_diagram_complex_path, imofelist_simple_path, imofelist_complex_path, simple_atoms, complex_atoms)
 
 # Generate matches using iMOFE overlap threshold
 imofe_overlap_threshold = 0.01  # Example threshold
-matches = MOPM_instance.compare_mo_contributions(output_file_path='C:/Users/Benjamin Kafin/Documents/VASP/NHC/IPR/lone/adatom/NHC_iPr_adatom_fcc/kpoints551/matches.txt', imofe_overlap_threshold=imofe_overlap_threshold)
+matches = MOPM_instance.compare_mo_contributions(output_file_path='filepath/matches.txt', imofe_overlap_threshold=imofe_overlap_threshold)
 
 # Print matches
 # Print matches
