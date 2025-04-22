@@ -33,10 +33,10 @@ class DOSCAR_LCFO:
         self._is_spin_polarized = None
     
         # Log progress
-        print(f"Parsing DOSCAR.LCFO from: {doscar}")
-        print(f"Parsing LCFO_Fragments from: {lcfo_fragments_path}")
-        if structure_file:
-            print(f"Using structure file (POSCAR) from: {structure_file}")
+        #print(f"Parsing DOSCAR.LCFO from: {doscar}")
+        #print(f"Parsing LCFO_Fragments from: {lcfo_fragments_path}")
+        #if structure_file:
+            #print(f"Using structure file (POSCAR) from: {structure_file}")
     
         # Parse the files
         self._fragments = self._parse_lcfo_fragments()
@@ -99,7 +99,9 @@ class DOSCAR_LCFO:
                 efermi = float(fermi_line.split()[3])  # Fermi energy is the 4th value
             except (IndexError, ValueError):
                 raise ValueError("Could not parse Fermi energy from the 6th line of DOSCAR.LCFO.")
-    
+            self.fermi_energy = efermi
+
+            
             # Initialize arrays for TDOS
             energies = []
             spin_up_densities = []
@@ -160,7 +162,7 @@ class DOSCAR_LCFO:
                     fragment_atoms = self._fragments.get(fragments[fragment_index], {}).get("atoms", [])
                     if fragment_name == 'Au':
                         fragment_name = f"Au_{fragment_atoms[0]}"  # Rename fragment using atom number
-                    print(f"Processed fragment '{fragment_name}' with atoms: {fragment_atoms} and orbitals: {orbitals}")
+                    #print(f"Processed fragment '{fragment_name}' with atoms: {fragment_atoms} and orbitals: {orbitals}")
                     fragment_index += 1  # Move to the next fragment in sequential order
                     line = file.readline()  # Move to numeric rows
                     continue
@@ -198,12 +200,12 @@ class DOSCAR_LCFO:
                     line = file.readline().strip()
     
                     # End of numeric rows for the current fragment
-                    if not line:
-                        print(f"End of file reached for fragment '{fragment_name}'")
-                        break
+                    #if not line:
+                        #print(f"End of file reached for fragment '{fragment_name}'")
+                        #break
     
                 # Debug output for each pMODOS row
-                print(f"Processed {rows_read} rows for fragment '{fragment_name}'")
+                #print(f"Processed {rows_read} rows for fragment '{fragment_name}'")
     
             # Assign parsed pMODOS
             self._pmodos = pmodos
