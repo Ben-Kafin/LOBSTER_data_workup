@@ -27,7 +27,8 @@ class MOPM:
             self.mo_diagram_complex_spin_1 = []
         if not self.mo_diagram_complex_spin_2:
             self.mo_diagram_complex_spin_2 = []
-            
+        # Initialize the attribute to store the alignment shift.
+        self.alignment_shift = None
         if align_energy:
             self.align_simple_system_energies()
     
@@ -156,6 +157,11 @@ class MOPM:
         Align the energies of the simple system to the complex system by shifting all simple MO energies.
         Assumes that the lowest-energy MO (MO1) is at index 0 in both systems.
         """
+        # If already applied, just return the stored shift.
+        if hasattr(self, 'alignment_shift') and self.alignment_shift is not None:
+            print(f"Alignment already applied. Using stored shift of {self.alignment_shift:.4f} eV.")
+            return self.alignment_shift
+    
         # Ensure that we have at least one MO for reference in the simple and complex systems.
         if not self.full_complex_MO_spin_1 or not self.mo_diagram_simple_spin_1:
             raise ValueError("Missing MO1 in one or both systems for energy alignment.")
@@ -165,10 +171,10 @@ class MOPM:
         complex_mo1 = self.full_complex_MO_spin_1[0]
         simple_mo1 = self.mo_diagram_simple_spin_1[0]
         
-        # Calculate the energy shift required so that simple MO1 aligns with complex MO1
+        # Calculate the energy shift required so that simple MO1 aligns with complex MO1.
         energy_offset = complex_mo1['energy'] - simple_mo1['energy']
         
-        # Apply this shift to every MO in the simple system (spin 1)
+        # Apply this shift to every MO in the simple system (spin 1).
         for mo in self.mo_diagram_simple_spin_1:
             mo['energy'] += energy_offset
     
@@ -177,6 +183,8 @@ class MOPM:
             for mo in self.mo_diagram_simple_spin_2:
                 mo['energy'] += energy_offset
     
+        # Store the alignment shift.
+        self.alignment_shift = energy_offset
         print(f"Applied an energy shift of {energy_offset:.4f} eV to the simple system.")
         return energy_offset
     
@@ -338,7 +346,7 @@ class MOPM:
                             f"{molecule['percent']:.2f}\n")
     
         return results
-
+'''
 # File paths for the MO diagrams and output files
 mo_diagram_simple_path = 'C:/Users/nazin_lab/Documents/VASP_files/NHCs/iPr/lone_adatoms/NHC_iPr_fcc/spinpol/kpoints551/AuC13N2H18_1.MO_Diagram.lobster'
 mo_diagram_complex_path = 'C:/Users/nazin_lab/Documents/VASP_files/NHCs/iPr/lone_adatoms/NHC_iPr_fcc/spinpol/kpoints551/Au4C13N2H18_1.MO_Diagram.lobster'
@@ -349,6 +357,7 @@ simple_gold_molecule_output_path = 'C:/Users/nazin_lab/Documents/VASP_files/NHCs
 # Initialize the MOPM instance
 MOPM_instance = MOPM(mo_diagram_simple_path, mo_diagram_complex_path)
 # Access Spin 1 and Spin 2 data for the simple and complex systems
+'''
 '''
 print("Simple System Spin 1:")
 for mo in MOPM_instance.mo_diagram_simple_spin_1:
@@ -372,6 +381,7 @@ if MOPM_instance.full_complex_MO_spin_2:
 else:
     print("\nNo Spin 2 Data for Complex System.")
     '''
+'''
 
 # Generate matches and write them to the output file
 matches = MOPM_instance.compare_mo_contributions(matches_output_path)
@@ -407,3 +417,4 @@ for result in simple_results:
           f"AO Overlap: {result['ao_overlap']:.4f}, Energy Shift: {result['energy_shift']:.4f} eV, "
           f"Gold contributions: s-states = {gold['s']:.2f}%, d-states = {gold['d']:.2f}%, total = {gold['percent']:.2f}%, "
           f"Molecule contributions: total = {molecule['percent']:.2f}%")
+'''
