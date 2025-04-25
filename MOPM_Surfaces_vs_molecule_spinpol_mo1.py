@@ -188,31 +188,34 @@ class MOPM:
         print(f"Applied an energy shift of {energy_offset:.4f} eV to the simple system.")
         return energy_offset
     
-    def compare_mo_contributions(self, output_file_path=None, energy_shift_threshold=2.0):
+    def compare_mo_contributions(self, output_file_path=None, energy_shift_threshold=0.0):
         """
         Compare all MOs between the simple and complex systems based on AO contributions.
         Compare simple spin 1 with complex spin 1 and simple spin 2 with complex spin 2.
         Select the simple MO with the projection closest to ±1 for each complex MO.
         Optionally write the results to an output file.
+        
+        Returns:
+            tuple: (matches_spin_up, matches_spin_down)
         """
-        matches = []
-    
+        matches_spin_up = []
+        
         # Compare Spin 1 of the simple and complex systems
         for complex_mo in self.mo_diagram_complex_spin_1:
             best_match = None
             closest_projection_distance = float('inf')  # Initialize the closest distance
             complex_normalized = complex_mo['ao_contributions'] / np.linalg.norm(complex_mo['ao_contributions'])
-    
+        
             for simple_mo in self.mo_diagram_simple_spin_1:
                 # Normalize AO contributions
                 simple_normalized = simple_mo['ao_contributions'] / np.linalg.norm(simple_mo['ao_contributions'])
-    
+        
                 # Calculate the dot product (signed overlap)
                 ao_projection = np.dot(simple_normalized, complex_normalized)
-    
+        
                 # Calculate the distance from ±1 (closest match to perfect projection)
                 projection_distance = min(abs(1 - ao_projection), abs(-1 - ao_projection))
-    
+        
                 if projection_distance < closest_projection_distance:  # Check for smaller distance
                     closest_projection_distance = projection_distance
                     best_match = {
@@ -223,27 +226,29 @@ class MOPM:
                         'ao_overlap': ao_projection,  # Signed overlap
                         'energy_shift': complex_mo['energy'] - simple_mo['energy'],
                     }
-    
-            # Save the best match for the current complex MO
+        
+            # Save the best match for the current complex MO if it passes the threshold
             if best_match and abs(best_match['energy_shift']) >= energy_shift_threshold:
-                matches.append(best_match)
-    
+                matches_spin_up.append(best_match)
+        
+        matches_spin_down = []
+        
         # Compare Spin 2 of the simple and complex systems
         for complex_mo in self.mo_diagram_complex_spin_2:
             best_match = None
             closest_projection_distance = float('inf')  # Initialize the closest distance
             complex_normalized = complex_mo['ao_contributions'] / np.linalg.norm(complex_mo['ao_contributions'])
-    
+        
             for simple_mo in self.mo_diagram_simple_spin_2:
                 # Normalize AO contributions
                 simple_normalized = simple_mo['ao_contributions'] / np.linalg.norm(simple_mo['ao_contributions'])
-    
+        
                 # Calculate the dot product (signed overlap)
                 ao_projection = np.dot(simple_normalized, complex_normalized)
-    
+        
                 # Calculate the distance from ±1 (closest match to perfect projection)
                 projection_distance = min(abs(1 - ao_projection), abs(-1 - ao_projection))
-    
+        
                 if projection_distance < closest_projection_distance:  # Check for smaller distance
                     closest_projection_distance = projection_distance
                     best_match = {
@@ -254,21 +259,26 @@ class MOPM:
                         'ao_overlap': ao_projection,  # Signed overlap
                         'energy_shift': complex_mo['energy'] - simple_mo['energy'],
                     }
-    
-            # Save the best match for the current complex MO
+        
+            # Save the best match for the current complex MO if it passes the threshold
             if best_match and abs(best_match['energy_shift']) >= energy_shift_threshold:
-                matches.append(best_match)
-    
-        # Write matches to output file if specified
+                matches_spin_down.append(best_match)
+        
+        # Optionally, write the matches to an output file.
         if output_file_path:
             with open(output_file_path, 'w') as f:
-                f.write("Complex MO\tComplex Energy (eV)\tSimple MO\tSimple Energy (eV)\tAO Overlap\tEnergy Shift (eV)\n")
-                for match in matches:
-                    f.write(f"{match['complex_mo']}\t{match['complex_mo_energy']:.4f}\t"
+                f.write("Spin\tComplex MO\tComplex Energy (eV)\tSimple MO\tSimple Energy (eV)\t"
+                        "AO Overlap\tEnergy Shift (eV)\n")
+                for match in matches_spin_up:
+                    f.write(f"Spin Up\t{match['complex_mo']}\t{match['complex_mo_energy']:.4f}\t"
                             f"{match['simple_mo']}\t{match['simple_mo_energy']:.4f}\t"
                             f"{match['ao_overlap']:.4f}\t{match['energy_shift']:.4f}\n")
-    
-        return matches
+                for match in matches_spin_down:
+                    f.write(f"Spin Down\t{match['complex_mo']}\t{match['complex_mo_energy']:.4f}\t"
+                            f"{match['simple_mo']}\t{match['simple_mo_energy']:.4f}\t"
+                            f"{match['ao_overlap']:.4f}\t{match['energy_shift']:.4f}\n")
+        
+        return matches_spin_up, matches_spin_down
 
     def compare_gold_molecule_contributions(self, matches, full_MO, output_file_path=None, system="complex"):
         """
@@ -346,75 +356,3 @@ class MOPM:
                             f"{molecule['percent']:.2f}\n")
     
         return results
-'''
-# File paths for the MO diagrams and output files
-mo_diagram_simple_path = 'C:/Users/nazin_lab/Documents/VASP_files/NHCs/iPr/lone_adatoms/NHC_iPr_fcc/spinpol/kpoints551/AuC13N2H18_1.MO_Diagram.lobster'
-mo_diagram_complex_path = 'C:/Users/nazin_lab/Documents/VASP_files/NHCs/iPr/lone_adatoms/NHC_iPr_fcc/spinpol/kpoints551/Au4C13N2H18_1.MO_Diagram.lobster'
-matches_output_path = 'C:/Users/nazin_lab/Documents/VASP_files/NHCs/iPr/lone_adatoms/NHC_iPr_fcc/spinpol/kpoints551/matches_output2eV_spinpol.txt'
-gold_molecule_output_path = 'C:/Users/nazin_lab/Documents/VASP_files/NHCs/iPr/lone_adatoms/NHC_iPr_fcc/spinpol/kpoints551/gold_molecule_contributions2eV_spinpol.txt'
-simple_gold_molecule_output_path = 'C:/Users/nazin_lab/Documents/VASP_files/NHCs/iPr/lone_adatoms/NHC_iPr_fcc/spinpol/kpoints551/simple_gold_molecule_contributions_matches2eV_spinpol.txt'
-
-# Initialize the MOPM instance
-MOPM_instance = MOPM(mo_diagram_simple_path, mo_diagram_complex_path)
-# Access Spin 1 and Spin 2 data for the simple and complex systems
-'''
-'''
-print("Simple System Spin 1:")
-for mo in MOPM_instance.mo_diagram_simple_spin_1:
-    print(mo)
-
-if MOPM_instance.mo_diagram_simple_spin_2:
-    print("\nSimple System Spin 2:")
-    for mo in MOPM_instance.mo_diagram_simple_spin_2:
-        print(mo)
-else:
-    print("\nNo Spin 2 Data for Simple System.")
-
-print("\nComplex System Spin 1:")
-for mo in MOPM_instance.full_complex_MO_spin_1:
-    print(mo)
-
-if MOPM_instance.full_complex_MO_spin_2:
-    print("\nComplex System Spin 2:")
-    for mo in MOPM_instance.full_complex_MO_spin_2:
-        print(mo)
-else:
-    print("\nNo Spin 2 Data for Complex System.")
-    '''
-'''
-
-# Generate matches and write them to the output file
-matches = MOPM_instance.compare_mo_contributions(matches_output_path)
-
-# Print the matches
-print("\nMatches:")
-for match in matches:
-    print(f"Complex MO: {match['complex_mo']}, {match['complex_mo_energy']}eV, "
-          f"Simple MO: {match['simple_mo']}, {match['simple_mo_energy']}eV, "
-          f"AO Overlap: {match['ao_overlap']:.4f}, Energy Shift: {match['energy_shift']:.4f}eV")
-
-# Analyze gold/molecule contributions for the complex system
-complex_results = MOPM_instance.compare_gold_molecule_contributions(matches, MOPM_instance.full_complex_MO_spin_1, gold_molecule_output_path, system="complex")
-
-# Analyze gold/molecule contributions for the simple system
-simple_results = MOPM_instance.compare_gold_molecule_contributions(matches, MOPM_instance.mo_diagram_simple_spin_1, simple_gold_molecule_output_path, system="simple")
-
-# Print results for both systems
-print("\nComplex System Contributions:")
-for result in complex_results:
-    gold = result['gold_contributions']
-    molecule = result['molecule_contributions']
-    print(f"Complex MO: {result['complex_mo']}, Energy: {result['complex_energy']} eV, "
-          f"AO Overlap: {result['ao_overlap']:.4f}, Energy Shift: {result['energy_shift']:.4f} eV, "
-          f"Gold contributions: s-states = {gold['s']:.2f}%, d-states = {gold['d']:.2f}%, total = {gold['percent']:.2f}%, "
-          f"Molecule contributions: total = {molecule['percent']:.2f}%")
-
-print("\nSimple System Contributions:")
-for result in simple_results:
-    gold = result['gold_contributions']
-    molecule = result['molecule_contributions']
-    print(f"Simple MO: {result['simple_mo']}, Energy: {result['simple_energy']} eV, "
-          f"AO Overlap: {result['ao_overlap']:.4f}, Energy Shift: {result['energy_shift']:.4f} eV, "
-          f"Gold contributions: s-states = {gold['s']:.2f}%, d-states = {gold['d']:.2f}%, total = {gold['percent']:.2f}%, "
-          f"Molecule contributions: total = {molecule['percent']:.2f}%")
-'''
