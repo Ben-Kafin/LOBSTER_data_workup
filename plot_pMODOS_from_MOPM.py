@@ -1,7 +1,13 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Apr 25 14:05:16 2025
+
+@author: nazin_lab
+"""
 from matplotlib import pyplot as plt
 import numpy as np
 from pymatgen.electronic_structure.core import Spin
-from MOPM_Surfaces_vs_molecule_spinpol_mo1 import MOPM  # Updated import; assumes your working MOPM class is in MOPM.py
+from MOPM_Surfaces_vs_molecule_spinpol_mo1 import MOPM  # assumes new MOPM class with two match lists
 from lib_DOS_lcfo import DOSCAR_LCFO  # Import the DOSCAR_LCFO class
 import itertools
 
@@ -13,200 +19,208 @@ class IntegratedPlotter:
         """
         Initialize the IntegratedPlotter with file paths for DOS, LCFO, and MO diagrams,
         as well as a path where the match output will be written.
-    
-        Args:
-            simple_doscar_file (str): DOSCAR file for the simple system.
-            simple_lcfo_file (str): LCFO fragments file for the simple system.
-            simple_mo_diagram (str): MO diagram file for the simple system.
-            complex_doscar_file (str): DOSCAR file for the complex system.
-            complex_lcfo_file (str): LCFO fragments file for the complex system.
-            complex_mo_diagram (str): MO diagram file for the complex system.
-            matches_output_path (str): Path to write match output.
         """
-        # Initialize the MOPM instance.
+        # Initialize the MOPM instance and align energies.
         self.mopm = MOPM(simple_mo_diagram, complex_mo_diagram, align_energy=True)
         self.alignment_shift = self.mopm.alignment_shift
-    
+
         # Load the DOSCAR/LCFO instances.
         self.simple_dos = DOSCAR_LCFO(simple_doscar_file, simple_lcfo_file)
         self.complex_dos = DOSCAR_LCFO(complex_doscar_file, complex_lcfo_file)
-    
-        # Generate match results using the MOPM class.
-        # Note: compare_mo_contributions writes its output to the provided file.
-        self.matches = self.mopm.compare_mo_contributions(matches_output_path)
-    
-        # (Optional:) If you want to filter matches by additional criteria (e.g., occupation change), 
-        # you can do that right here. For now, we simply pass along all computed matches.
-        self.filtered_matches = self.matches  # No extra filtering method in the new MOPM.
-    
-        # Take the first set of PMODOS data from the complex DOS instance.
+
+        # Get the two match lists directly.
+        # (Assumes compare_mo_contributions returns (matches_spin_up, matches_spin_down))
+        self.matches_spin_up, self.matches_spin_down = self.mopm.compare_mo_contributions(
+            matches_output_path, energy_shift_threshold=0.0
+        )
+
+        # Get PMODOS data (from the complex system) from the first available key.
         self.complex_pmodos = next(iter(self.complex_dos.pmodos.values()), {})
 
-    
+
     def plot_aggregated_pmodos(self, energy_shift_lower_bound, energy_shift_upper_bound,
                                 show_occupation_changes=False,
-                                user_defined_matches=None,
                                 user_defined_complex_mos=None,
+                                plot_all_matches=True,
                                 save_path=None):
         """
-        Plots the PMODOS curves for matches (both computed and user-specified)
-        that have an energy shift within the provided bounds.
+        Plots the PMODOS curves for the two spin match lists so that:
+          - It always plots the matches specified in user_defined_complex_mos (regardless of energy bounds).
+          - Optionally, it also plots all matches that pass the energy shift threshold if plot_all_matches is True.
         
-        If user_defined_complex_mos is provided, only matches with those complex MO names are plotted.
-    
-        The simple system's energy axis is shifted using the MO1 alignment shift (from MOPM),
-        ensuring both DOS curves are on the same energy scale.
+        The final curves are the union of (all matches within the bounds) and (user-specified matches).
+        For spin-up, the DOS is taken from the Spin.up channel and drawn as a solid line.
+        For spin-down, the DOS is taken from the Spin.down channel and drawn as a dotted line.
+        
+        The lines are drawn with the same style (line type, width, and color) across the board.
+        The simple system's energy axis is shifted by the alignment shift.
         """
-        # Retrieve energy grids and Fermi energies.
+        # Retrieve energy grids and adjust energies.
         simple_energies = self.simple_dos.energies
         complex_energies = self.complex_dos.energies
+        adjusted_simple_energies = simple_energies + self.alignment_shift
+        adjusted_simple_fermi = (self.simple_dos.fermi_energy - self.complex_dos.fermi_energy) - self.alignment_shift
     
-        # Get the alignment shift computed in MOPM.
-        alignment_shift = self.alignment_shift
+        # --- 1. Filter ALL matches (by energy shift threshold) for each spin.
+        all_matches_spin1 = []
+        for match in self.matches_spin_up:
+            eshift = match["energy_shift"]
+            if energy_shift_lower_bound <= abs(eshift) <= energy_shift_upper_bound:
+                all_matches_spin1.append(match)
+        all_matches_spin2 = []
+        for match in self.matches_spin_down:
+            eshift = match["energy_shift"]
+            if energy_shift_lower_bound <= abs(eshift) <= energy_shift_upper_bound:
+                all_matches_spin2.append(match)
     
-        # Shift the simple system’s energy grid by the alignment shift.
-        adjusted_simple_energies = simple_energies + alignment_shift
-        # Adjust the simple-system Fermi energy relative to the complex.
-        adjusted_simple_fermi = (self.simple_dos.fermi_energy - self.complex_dos.fermi_energy) - alignment_shift
+        print("All matches (within energy shift bounds):")
+        for match in all_matches_spin1:
+            print(f"Spin Up: Complex MO: {match['complex_mo']} ({match['complex_mo_energy']} eV), "
+                  f"Simple MO: {match['simple_mo']} ({match['simple_mo_energy']} eV), "
+                  f"AO Overlap: {match['ao_overlap']:.4f}, Energy Shift: {match['energy_shift']:.2f} eV")
+        for match in all_matches_spin2:
+            print(f"Spin Down: Complex MO: {match['complex_mo']} ({match['complex_mo_energy']} eV), "
+                  f"Simple MO: {match['simple_mo']} ({match['simple_mo_energy']} eV), "
+                  f"AO Overlap: {match['ao_overlap']:.4f}, Energy Shift: {match['energy_shift']:.2f} eV")
     
-        # Start with computed matches.
-        all_matches = list(self.filtered_matches)
-    
-        # If the user has specified complex MO names, restrict the computed matches to those.
+        # --- 2. Get user-defined matches (ignoring energy bounds).
         if user_defined_complex_mos is not None:
-            all_matches = [match for match in all_matches if match["complex_mo"] in user_defined_complex_mos]
-            if not all_matches:
-                print("Warning: None of the computed matches correspond to the specified complex MO names.")
-    
-        # Optionally append user-defined full match dictionaries.
-        if user_defined_matches is not None:
-            for match in user_defined_matches:
-                match["user_defined"] = True
-                all_matches.append(match)
-    
-        # --- Further filter matches by energy shift bounds and, optionally, occupation change.
-        energy_filtered_matches = []
-        if show_occupation_changes:
-            print(f"Matches with occupation change and |ΔE| between {energy_shift_lower_bound:.2f} and {energy_shift_upper_bound:.2f} eV:")
+            user_specified_spin1 = [m for m in self.matches_spin_up if m["complex_mo"] in user_defined_complex_mos]
+            user_specified_spin2 = [m for m in self.matches_spin_down if m["complex_mo"] in user_defined_complex_mos]
         else:
-            print(f"All matches with |ΔE| between {energy_shift_lower_bound:.2f} and {energy_shift_upper_bound:.2f} eV:")
+            user_specified_spin1 = []
+            user_specified_spin2 = []
     
-        for match in all_matches:
-            energy_shift = match["energy_shift"]
-            # For computed matches, check occupation-change if required.
-            if not match.get("user_defined", False):
-                changes_occupation = (match["simple_mo_energy"] * match["complex_mo_energy"]) < 0
-                if show_occupation_changes and not changes_occupation:
-                    continue
-            if energy_shift_lower_bound <= abs(energy_shift) <= energy_shift_upper_bound:
-                energy_filtered_matches.append(match)
-                print(f"Complex MO: {match['complex_mo']} ({match['complex_mo_energy']} eV), "
-                      f"Simple MO: {match['simple_mo']} ({match['simple_mo_energy']} eV), "
-                      f"AO Overlap: {match['ao_overlap']:.4f}, Energy Shift: {energy_shift:.4f} eV")
+        print("\nUser-specified matches (ignoring energy bounds):")
+        for match in user_specified_spin1:
+            print(f"Spin Up: Complex MO: {match['complex_mo']} ({match['complex_mo_energy']} eV), "
+                  f"Simple MO: {match['simple_mo']} ({match['simple_mo_energy']} eV), "
+                  f"AO Overlap: {match['ao_overlap']:.4f}, Energy Shift: {match['energy_shift']:.2f} eV")
+        for match in user_specified_spin2:
+            print(f"Spin Down: Complex MO: {match['complex_mo']} ({match['complex_mo_energy']} eV), "
+                  f"Simple MO: {match['simple_mo']} ({match['simple_mo_energy']} eV), "
+                  f"AO Overlap: {match['ao_overlap']:.4f}, Energy Shift: {match['energy_shift']:.2f} eV")
     
-        # --- Create the plot: two subplots for simple and complex PMODOS.
-        # Assume energy_filtered_matches is your list of computed matches.
-        # Build a color mapping (one color per unique match)
+        # --- 3. Form the final union of matches.
+        # If plot_all_matches is True, use union of all matches and user-specified.
+        # Otherwise, use only the user-specified matches.
+        def union_matches(all_matches, user_specified):
+            final = all_matches.copy()
+            for m in user_specified:
+                if m not in final:
+                    final.append(m)
+            return final
+    
+        if plot_all_matches:
+            final_spin1 = union_matches(all_matches_spin1, user_specified_spin1)
+            final_spin2 = union_matches(all_matches_spin2, user_specified_spin2)
+        else:
+            final_spin1 = user_specified_spin1
+            final_spin2 = user_specified_spin2
+    
+        # --- 4. Build color mappings for each spin from the final sets.
         colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
-        color_cycle = itertools.cycle(colors)
-        match_colors = {}
-        for match in energy_filtered_matches:
-            key = match['complex_mo']  # unique key for the match
-            if key not in match_colors:
-                match_colors[key] = next(color_cycle)
-        
-        # Group matches by unique complex MO name so that each match is plotted only once.
-        unique_matches = {}
-        for match in energy_filtered_matches:
+        color_cycle1 = itertools.cycle(colors)
+        match_colors_spin1 = {}
+        for match in final_spin1:
             key = match['complex_mo']
-            if key not in unique_matches:
-                unique_matches[key] = match
-        # Now use unique_matches.values() in place of energy_filtered_matches, so that you don't plot duplicates
-        
-        # --- Create the plot: two subplots for simple and complex PMODOS.
+            if key not in match_colors_spin1:
+                match_colors_spin1[key] = next(color_cycle1)
+    
+        color_cycle2 = itertools.cycle(colors)
+        match_colors_spin2 = {}
+        for match in final_spin2:
+            key = match['complex_mo']
+            if key not in match_colors_spin2:
+                match_colors_spin2[key] = next(color_cycle2)
+    
+        # --- 5. Create subplots.
         fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(10, 8), sharex=True)
         axes[0].tick_params(labelbottom=True)
-        
-        # Plot the simple system PMODOS (flipped vertically) on the adjusted energy axis.
+    
+        # --- Plot for the simple system.
         ax_simple = axes[0]
-        for match in unique_matches.values():
-            # Derive the orbital key from simple MO name (assuming its format contains an underscore)
+        # For spin-up: Use DOS data from Spin.up (solid line)
+        for match in final_spin1:
             orbital_key = match['simple_mo'].rsplit('_', 1)[-1]
             simple_dos_data = self.simple_dos.pmodos.get('C13N2H18', {}).get(orbital_key, None)
             if simple_dos_data is not None:
-                col = match_colors.get(match['complex_mo'], 'black')
-                # Plot Spin Up with a solid line.
+                col = match_colors_spin1.get(match['complex_mo'], 'black')
                 ax_simple.plot(
                     adjusted_simple_energies,
                     -np.array(simple_dos_data[Spin.up]),
                     label=f"MO: {orbital_key} Spin Up (ΔE: {match['energy_shift']:.2f} eV)",
                     color=col,
-                    linestyle='solid',
-                    alpha=0.7
+                    linestyle='solid'
                 )
-                # Plot Spin Down (if available) with a dashed line.
-                if Spin.down in simple_dos_data:
-                    ax_simple.plot(
-                        adjusted_simple_energies,
-                        -np.array(simple_dos_data[Spin.down]),
-                        label=f"MO: {orbital_key} Spin Down (ΔE: {match['energy_shift']:.2f} eV)",
-                        color=col,
-                        linestyle='dashed',
-                        alpha=0.7
-                    )
-        ax_simple.axvline(0, color="red", linestyle="--", linewidth=1, label="Surface Bound NHC Fermi Energy")
-        ax_simple.axvline(adjusted_simple_fermi, color="blue", linestyle="--", linewidth=1,
-                          label=f"Adj. NHC Fermi ({adjusted_simple_fermi:.2f} eV)")
-        ax_simple.set_title("Lone NHC PMODOS (MO1 Aligned)")
+        # For spin-down: Use DOS data from Spin.down (dotted line)
+        for match in final_spin2:
+            orbital_key = match['simple_mo'].rsplit('_', 1)[-1]
+            simple_dos_data = self.simple_dos.pmodos.get('C13N2H18', {}).get(orbital_key, None)
+            if simple_dos_data is not None:
+                col = match_colors_spin2.get(match['complex_mo'], 'black')
+                ax_simple.plot(
+                    adjusted_simple_energies,
+                    -np.array(simple_dos_data[Spin.down]),
+                    label=f"MO: {orbital_key} Spin Down (ΔE: {match['energy_shift']:.2f} eV)",
+                    color=col,
+                    linestyle='dotted'
+                )
+        ax_simple.axvline(0, color="red", linestyle="--", linewidth=1,
+                          label="Surface Bound NHC Fermi Energy")
+        #ax_simple.axvline(adjusted_simple_fermi, color="blue", linestyle="--", linewidth=1,label=f"Adj. NHC Fermi ({adjusted_simple_fermi:.2f} eV)")
+        ax_simple.set_title("Lone NHC PMODOS (MO1 Aligned) - Simple System")
         ax_simple.set_ylabel("Density of States (Flipped)")
         ax_simple.grid(alpha=0.3)
         ax_simple.legend(fontsize=8)
-        
-        # Plot the complex system PMODOS on its original energy axis.
+    
+        # --- Plot for the complex system.
         ax_complex = axes[1]
-        for match in unique_matches.values():
+        # For spin-up: Use DOS data from Spin.up (solid line)
+        for match in final_spin1:
             orbital_key = match['complex_mo'].rsplit('_', 1)[-1]
             complex_dos_data = self.complex_pmodos.get(orbital_key, None)
             if complex_dos_data is not None:
-                col = match_colors.get(match['complex_mo'], 'black')
-                # Plot Spin Up with a solid line.
+                col = match_colors_spin1.get(match['complex_mo'], 'black')
                 ax_complex.plot(
                     complex_energies,
                     np.array(complex_dos_data[Spin.up]),
                     label=f"MO: {orbital_key} Spin Up (ΔE: {match['energy_shift']:.2f} eV)",
                     color=col,
-                    linestyle='solid',
-                    alpha=0.7
+                    linestyle='solid'
                 )
-                # Plot Spin Down with a dashed line.
-                if Spin.down in complex_dos_data:
-                    ax_complex.plot(
-                        complex_energies,
-                        np.array(complex_dos_data[Spin.down]),
-                        label=f"MO: {orbital_key} Spin Down (ΔE: {match['energy_shift']:.2f} eV)",
-                        color=col,
-                        linestyle='dashed',
-                        alpha=0.7
-                    )
-        ax_complex.axvline(0, color="red", linestyle="--", linewidth=1, label="Surface Bound NHC Fermi Energy")
-        ax_complex.axvline(adjusted_simple_fermi, color="blue", linestyle="--", linewidth=1,
-                          label=f"Adj. NHC Fermi ({adjusted_simple_fermi:.2f} eV)")
-        ax_complex.set_title("Surface Bound NHC PMODOS (Reference at 0 eV)")
+        # For spin-down: Use DOS data from Spin.down (dotted line)
+        for match in final_spin2:
+            orbital_key = match['complex_mo'].rsplit('_', 1)[-1]
+            complex_dos_data = self.complex_pmodos.get(orbital_key, None)
+            if complex_dos_data is not None:
+                col = match_colors_spin2.get(match['complex_mo'], 'black')
+                ax_complex.plot(
+                    complex_energies,
+                    np.array(complex_dos_data[Spin.down]),
+                    label=f"MO: {orbital_key} Spin Down (ΔE: {match['energy_shift']:.2f} eV)",
+                    color=col,
+                    linestyle='dotted'
+                )
+        ax_complex.axvline(0, color="red", linestyle="--", linewidth=1,
+                           label="Surface Bound NHC Fermi Energy")
+        #ax_complex.axvline(adjusted_simple_fermi, color="blue", linestyle="--", linewidth=1,label=f"Adj. NHC Fermi ({adjusted_simple_fermi:.2f} eV)")
+        ax_complex.set_title("Surface Bound NHC PMODOS (Reference at 0 eV) - Complex System")
         ax_complex.set_xlabel("Energy (eV)")
         ax_complex.set_ylabel("Density of States")
         ax_complex.grid(alpha=0.3)
         ax_complex.legend(fontsize=8)
-        
+    
         plt.tight_layout()
         if save_path:
             plt.savefig(save_path, dpi=300)
             print(f"Plot saved to {save_path}")
         else:
             plt.show()
-
+                
 
 if __name__ == "__main__":
-    # File paths (update these paths as needed)
+    # Update these paths as needed.
     simple_doscar_file = 'C:/directory/DOSCAR.LCFO.lobster'
     simple_lcfo_file   = 'C:/directory/LCFO_Fragments.lobster'
     simple_mo_diagram  = 'C:/directory/MO_Diagram.lobster'
@@ -216,12 +230,12 @@ if __name__ == "__main__":
     complex_mo_diagram  = 'C:/directory2/MO_Diagram_adjusted.lobster'
     
     matches_output_path = 'C:/directory2/matches_important.txt'
-    
-    # Energy shift bounds (in eV)
-    energy_shift_lower_bound = 0
-    energy_shift_upper_bound = 15.0
-    
-    # Initialize the IntegratedPlotter.
+
+    energy_shift_lower_bound = 0.75
+    energy_shift_upper_bound = 1.0
+
+    user_defined_complex_mos = ['37a','38a','39a','40a']
+
     integrated_plotter = IntegratedPlotter(
         simple_doscar_file,
         simple_lcfo_file,
@@ -231,15 +245,13 @@ if __name__ == "__main__":
         complex_mo_diagram,
         matches_output_path
     )
-    
-    # Specify additional matches via complex MO names (optional).
-    user_defined_complex_mos = ['37a','38a','39a','40a']
-    
-    #user_defined_complex_mos = ["C13N2H18_1_39a", "C13N2H18_1_40a"]
+
+
     integrated_plotter.plot_aggregated_pmodos(
-        energy_shift_lower_bound=0,
-        energy_shift_upper_bound=15.0,
+        energy_shift_lower_bound=energy_shift_lower_bound,
+        energy_shift_upper_bound=energy_shift_upper_bound,
         show_occupation_changes=False,
         user_defined_complex_mos=user_defined_complex_mos,
+        plot_all_matches=True,
         save_path='C:/directory2/pmodos_plot.png'
     )
