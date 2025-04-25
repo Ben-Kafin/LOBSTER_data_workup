@@ -4,7 +4,6 @@ from pymatgen.electronic_structure.core import Spin
 from MOPM_Surfaces_vs_molecule_spinpol_mo1 import MOPM  # Updated import; assumes your working MOPM class is in MOPM.py
 from lib_DOS_lcfo import DOSCAR_LCFO  # Import the DOSCAR_LCFO class
 import itertools
-from pymatgen.electronic_structure.core import Spin
 
 
 class IntegratedPlotter:
