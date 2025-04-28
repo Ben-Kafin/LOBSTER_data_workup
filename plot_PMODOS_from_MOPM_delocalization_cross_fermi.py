@@ -272,15 +272,15 @@ class IntegratedPlotter:
 
 
 if __name__ == "__main__":
-    simple_doscar_file = 'C:/Users/nazin_lab/Documents/VASP_files/NHCs/iPr/lone_4layers/freegold1/freegold2/kpoints551/NHC/DOSCAR.LCFO.lobster'
-    simple_lcfo_file   = 'C:/Users/nazin_lab/Documents/VASP_files/NHCs/iPr/lone_4layers/freegold1/freegold2/kpoints551/NHC/LCFO_Fragments.lobster'
-    simple_mo_diagram  = 'C:/Users/nazin_lab/Documents/VASP_files/NHCs/iPr/lone_4layers/freegold1/freegold2/kpoints551/NHC/C13N2H18_1.MO_Diagram.lobster'
+    simple_doscar_file = 'C:/directory1/DOSCAR.LCFO.lobster'
+    simple_lcfo_file   = 'C:/directory1/LCFO_Fragments.lobster'
+    simple_mo_diagram  = 'C:/directory1/MO_Diagram.lobster'
 
-    complex_doscar_file = 'C:/Users/nazin_lab/Documents/VASP_files/NHCs/iPr/lone_4layers/freegold1/freegold2/kpoints551/dipole_correction/efield/DOSCAR.LCFO.lobster'
-    complex_lcfo_file   = 'C:/Users/nazin_lab/Documents/VASP_files/NHCs/iPr/lone_4layers/freegold1/freegold2/kpoints551/dipole_correction/efield/LCFO_Fragments.lobster'
-    complex_mo_diagram  = 'C:/Users/nazin_lab/Documents/VASP_files/NHCs/iPr/lone_4layers/freegold1/freegold2/kpoints551/dipole_correction/efield/C13N2H18_1.MO_Diagram_adjusted.lobster'
+    complex_doscar_file = 'C:/directory2/DOSCAR.LCFO.lobster'
+    complex_lcfo_file   = 'C:/directory2/LCFO_Fragments.lobster'
+    complex_mo_diagram  = 'C:/directory2/MO_Diagram_adjusted.lobster'
 
-    matches_output_path = 'C:/Users/nazin_lab/Documents/VASP_files/NHCs/iPr/lone_4layers/freegold1/freegold2/kpoints551/dipole_correction/efield/matches_important.txt'
+    matches_output_path = 'C:/directory2/matches_important.txt'
 
 
     energy_shift_lower_bound = 0
@@ -307,5 +307,5 @@ if __name__ == "__main__":
         plot_all_matches=False,
         only_opposite_nonzero=True,  # Enable filtering using the MO energy as reference
         nonzero_threshold=5e-2,      
-        save_path='C:/Users/nazin_lab/Documents/VASP_files/NHCs/iPr/lone_4layers/freegold1/freegold2/kpoints551/dipole_correction/efield/pmodos_plot.png'
+        save_path='C:/directory2/pmodos_plot.png'
     )
